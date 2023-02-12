@@ -175,17 +175,17 @@ tminimumMaybe =
 -- >>> "Hello" `startsWith` "Wello Horld!"
 -- False
 startsWith :: String -> String -> Bool
-startsWith x y = case (words x, words y) of
+startsWith x y = case (x, y) of
   ([], _) -> True
   (_, []) -> False
-  (x:xs, y:ys) -> if x == y then startsWith (unwords xs) (unwords ys) else False
+  (x:xs, y:ys) -> if x == y then startsWith (xs) (ys) else False
 
 tstartsWith :: Test
 tstartsWith = "startsWith" ~: TestList
   [ "Hello" `startsWith` "Hello World!" ~?= True,
     "Hello" `startsWith` "Wello Horld!" ~?= False,
     "Hello World!" `startsWith` "Hello" ~?= False,
-    "Hello" `startsWith` "Hello" ~?= True]
+    "Hel" `startsWith` "Hello" ~?= True]
 
 -- Part Three
 
@@ -200,10 +200,14 @@ tstartsWith = "startsWith" ~: TestList
 -- False
 
 endsWith :: String -> String -> Bool
-endsWith = todo
+endsWith s1 s2 = startsWith (reverse s1) (reverse s2)
 
 tendsWith :: Test
-tendsWith = "endsWith" ~: (assertFailure "testcase for endsWith" :: Assertion)
+tendsWith = "endsWith" ~: TestList 
+  [ "ld!" `endsWith` "Hello World!" ~?= True,
+    "World" `endsWith` "Hello World!" ~?= False,
+    "Hello World!" `endsWith` "ld!" ~?= False,
+    "ld!" `endsWith` "ld!" ~?= True]
 
 -- Part Four
 
@@ -223,11 +227,36 @@ tendsWith = "endsWith" ~: (assertFailure "testcase for endsWith" :: Assertion)
 -- >>> transpose [[1,2],[3,4,5]]
 -- [[1,3],[2,4]]
 -- (WARNING: this one is tricky!)
+
 transpose :: [[a]] -> [[a]]
-transpose = todo
+transpose m = case m of
+  [] -> []
+  [[]] -> []
+  _ -> if (transEmpty m) then [] else transHead m : transpose (transCut m)
+
+-- Helper functions
+
+-- Returns true if any of the lists in the list of lists is empty
+transEmpty :: [[a]] -> Bool
+transEmpty = foldr (\x y -> y || (length x == 0)) False
+
+-- Returns the head of each list in the list of lists
+transHead :: [[a]] -> [a]
+transHead = foldr (\x y -> head x : y) []
+
+-- Returns the tail of each list in the list of lists
+transCut :: [[a]] -> [[a]]
+transCut = foldr (\x y -> tail x : y) []
 
 ttranspose :: Test
-ttranspose = "transpose" ~: (assertFailure "testcase for transpose" :: Assertion)
+ttranspose = "transpose" ~: TestList
+  [
+    transpose [[1,2,3],[4,5,6]] ~?= [[1,4],[2,5],[3,6]],
+    transpose [] ~?= ([] :: [[Int]]),
+    transpose [[]] ~?= ([] :: [[Int]]),
+    transpose [[3,4,5]] ~?= [[3],[4],[5]],
+    transpose [[1,2],[3,4,5]] ~?= [[1,3],[2,4]]
+  ]
 
 -- Part Five
 
@@ -240,9 +269,27 @@ ttranspose = "transpose" ~: (assertFailure "testcase for transpose" :: Assertion
 -- 5
 
 countSub :: String -> String -> Int
-countSub = todo
+countSub sub str = case (sub, str) of 
+  ([], _) -> length str + 1
+  (_, []) -> 0
+  (x, y:ys) -> if (isSubstring x str) then 1 + (countSub sub ys) else countSub sub ys 
+
+isSubstring :: String -> String -> Bool
+isSubstring sub str = case (sub, str) of
+  ([], _) -> True
+  (_, []) -> False
+  (x:xs, y:ys) -> if x == y then isSubstring xs ys else False
+
 tcountSub :: Test
-tcountSub = "countSub" ~: (assertFailure "testcase for countSub" :: Assertion)
+tcountSub = "countSub" ~: TestList
+  [
+    countSub "aa" "aaa" ~?= 2,
+    countSub "" "aaac" ~?= 5,
+    countSub "aa" "aa" ~?= 1,
+    countSub "aa" "a" ~?= 0,
+    countSub "aa" "" ~?= 0,
+    countSub "aa" "aaaa" ~?= 3
+  ]
 
 --------------------------------------------------------------------------------
 -- Problem (Higher-order list operations)
