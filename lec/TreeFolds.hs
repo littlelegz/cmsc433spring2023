@@ -33,11 +33,11 @@ infixOrder (Branch x l r) = infixOrder l ++ [x] ++ infixOrder r
 {-
 For example, using this tree
 
-              5
-            /   \
-           2     9
-          / \     \
-         1   4     7
+            5
+          /   \
+         2     9
+        / \     \
+       1   4     7
 -}
 
 exTree :: Tree Int

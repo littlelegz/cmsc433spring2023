@@ -98,10 +98,7 @@ will arrive by "two day shipping":
 -}
 
 twoBusinessDays :: Day -> Day
-twoBusinessDays Sunday = Tuesday
-twoBusinessDays Saturday = Tuesday
-twoBusinessDays Friday = Tuesday
-twoBusinessDays d = nextWeekday nextWeekday d
+twoBusinessDays d = nextWeekday (nextWeekday d)
 
 {-
 Shapes
@@ -301,7 +298,8 @@ of `head` is not partial like the one for regular lists.)
 -- >>> safeHead oneTwoThree
 -- 1
 safeHead :: IntListNE -> Int
-safeHead = undefined
+safeHead (ICons x xs) = x
+safeHead (ISingle x) = x
 
 {-
 We can define functions by recursion on `IntListNE`s too, of course. Write a function
@@ -311,7 +309,9 @@ to calculate the sum of a non-empty list of integers.
 -- >>> sumOfIntListNE oneTwoThree
 -- 6
 sumOfIntListNE :: IntListNE -> Int
-sumOfIntListNE = undefined
+sumOfIntListNE xs = case (xs) of
+  (ICons x xs) -> x + sumOfIntListNE xs
+  (ISingle x) -> x
 
 {-
 Polymorphic Datatypes
@@ -415,7 +415,10 @@ We can write simple functions on trees by recursion:
 -- >>> treePlus (Branch 2 Empty Empty) 3
 -- Branch 5 Empty Empty
 treePlus :: Tree Int -> Int -> Tree Int
-treePlus = undefined
+treePlus tree x = case (tree) of
+  Branch a left right -> Branch (a+x) (treePlus left x) (treePlus right x)
+  Empty -> Empty
+
 
 {-
 We can accumulate all of the elements in a tree into a list:
@@ -435,13 +438,21 @@ infixOrder (Branch x l r) = infixOrder l ++ [x] ++ infixOrder r
 -- [5,2,1,4,9,7]
 
 prefixOrder :: Tree a -> [a]
-prefixOrder = undefined
+prefixOrder Empty = []
+prefixOrder (Branch x l r) = [x] ++ prefixOrder l ++ prefixOrder r
 
 {-
 (NOTE: This is a simple way of defining a tree walk in Haskell, but it is not
 the best way. In particular, the `infixOrder` function is *not* linear in the
 number of nodes in the tree. Why?  Can you think of a way to rewrite
 `infixOrder` so that it runs in linear time?)
+
+listTree' :: Tree a -> [a]
+listTree' t = foldTree f id t []
+    where f x y z ls = x (y: z ls)
+
+# Using a DList type, where function accepts one more arg, an empty list,
+on which everytime is appended 
 
 But, of course, what we should really do is reimplement our
 higher-order patterns for trees!

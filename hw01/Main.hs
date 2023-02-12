@@ -153,11 +153,16 @@ testLists = "testLists" ~: TestList
 -- >>> minumumMaybe [2,1,3]
 -- Just 1 
 minimumMaybe :: [Int] -> Maybe Int
-minimumMaybe = todo
+minimumMaybe = foldr (\x y -> case (y) of 
+  Nothing -> Just x
+  Just z -> if x < z then Just x else Just z) Nothing
 
 tminimumMaybe :: Test
 tminimumMaybe =
-   "minimumMaybe" ~: (assertFailure "testcases for minimumMaybe" :: Assertion)
+   "minimumMaybe" ~: TestList
+    [minimumMaybe [2,1,3] ~?= Just 1,
+     minimumMaybe []      ~?= Nothing,
+     minimumMaybe [1,1]   ~?= Just 1]
 
 -- Part Two
 
@@ -170,10 +175,17 @@ tminimumMaybe =
 -- >>> "Hello" `startsWith` "Wello Horld!"
 -- False
 startsWith :: String -> String -> Bool
-startsWith = todo
+startsWith x y = case (words x, words y) of
+  ([], _) -> True
+  (_, []) -> False
+  (x:xs, y:ys) -> if x == y then startsWith (unwords xs) (unwords ys) else False
 
 tstartsWith :: Test
-tstartsWith = "startsWith" ~: (assertFailure "testcase for startsWith" :: Assertion)
+tstartsWith = "startsWith" ~: TestList
+  [ "Hello" `startsWith` "Hello World!" ~?= True,
+    "Hello" `startsWith` "Wello Horld!" ~?= False,
+    "Hello World!" `startsWith` "Hello" ~?= False,
+    "Hello" `startsWith` "Hello" ~?= True]
 
 -- Part Three
 
