@@ -25,4 +25,3 @@
 }
 ```
 4. Misusing if statements, use boolean expression
-

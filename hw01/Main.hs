@@ -5,7 +5,7 @@ import Test.HUnit
 todo = error "It is your job to fill in this todo"
 
 studentName :: String
-studentName = todo
+studentName = "Jerry Zhao"
 
 testName :: Test
 testName = "testName" ~:
@@ -59,11 +59,8 @@ where) can and should be renamed.
 -}
 
 -- Part One
-
-abc x y z =
-  if x then if y then True else
-       if (x && z) then True else False
-  else False
+abc :: Bool -> Bool -> Bool -> Bool
+abc x y z = (x && (y || z))
 
 tabc :: Test
 tabc = "abc" ~: TestList [abc True False True  ~?= True,
@@ -72,18 +69,9 @@ tabc = "abc" ~: TestList [abc True False True  ~?= True,
 
 -- Part Two
 
+-- Peform arithmetic on two pairs of integers. (?)
 arithmetic :: ((Int, Int), Int) -> ((Int,Int), Int) -> (Int, Int, Int)
-arithmetic x1 x2 =
-     let a = fst (fst x1) in
-     let b = snd (fst x1) in
-     let c = snd x1 in
-     let d = fst (fst x2) in
-     let e = snd (fst x2) in
-     let f = snd x2
-       in
-       ((((((b*f) - (c*e)), ((c*
-       d) - (a*f)
-       ), ((a*e)-(b*d))))))
+arithmetic ((a,b), c) ((d,e), f) = (b*f - c*e, c*d - a*f, a*e - b*d)
 
 tarithmetic :: Test
 tarithmetic = "arithmetic" ~:
@@ -92,10 +80,12 @@ tarithmetic = "arithmetic" ~:
 
 -- Part Three
 
+-- Return elements of a list in reverse order.
+reverse :: [a] -> [a]
 reverse l  = reverseAux l [] where
-  reverseAux l acc =
-    if null l then acc
-       else reverseAux (tail l) (head l : acc)
+  reverseAux l acc = case l of
+    [] -> acc
+    (x:xs) -> reverseAux xs (x:acc)
 
 treverse :: Test
 treverse = "reverse" ~: TestList
@@ -104,9 +94,15 @@ treverse = "reverse" ~: TestList
 
 -- Part Four
 
-zip xs ys = g 0 xs ys where
-  g n xs ys = if n == length xs || n == length ys then [] else
-          (xs !! n, ys !! n) : g (n + 1) xs ys
+-- Given two lists, return a list of pairs of elements from the two, stopping
+-- when either list is exhausted.
+
+zip :: [a] -> [b] -> [(a,b)]
+zip xl yl = zipAux xl yl where
+  zipAux xl yl = case (xl, yl) of
+    ([], _) -> []
+    (_, []) -> []
+    (x:xs, y:ys) -> (x,y) : zipAux xs ys
 
 tzip :: Test
 tzip = "zip" ~:
