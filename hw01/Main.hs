@@ -394,10 +394,15 @@ tmap2 = "map2" ~: TestList
 --
 -- (where `root` is defined below.)
 mapMaybe :: (a -> Maybe b) -> [a] -> [b]
-mapMaybe = todo
+mapMaybe p = foldr (\x y -> case (p x) of
+  Nothing -> y
+  Just z -> z : y) []
 
 tmapMaybe :: Test
-tmapMaybe = "mapMaybe" ~: (assertFailure "testcase for mapMaybe" :: Assertion)
+tmapMaybe = "mapMaybe" ~: TestList 
+  [ mapMaybe root [0.0, -1.0, 4.0] ~?= [0.0,2.0],
+    mapMaybe root [] ~?= ([] :: [Double]),
+    mapMaybe root [-1.0, 25.0, 4.0] ~?= [5.0,2.0] ]
 
 root :: Double -> Maybe Double
 root d = if d < 0.0 then Nothing else Just $ sqrt d
@@ -435,10 +440,18 @@ function. Instead, define it yourself.
 -}
 
 concat' :: [[a]] -> [a]
-concat' = todo
+concat' = foldr (\x y -> addList x y) []
+
+-- Appends x to y (y is the accumulator) using foldr
+addList :: [a] -> [a] -> [a]
+addList x y = foldr (\x y -> x : y) y x
 
 tconcat' :: Test
-tconcat' = "concat" ~: (assertFailure "testcase for concat" :: Assertion)
+tconcat' = "concat" ~: TestList
+  [ concat' [[1,2,3],[4,5,6],[7,8,9]] ~?= [1,2,3,4,5,6,7,8,9],
+    concat' [[1,2,3],[4,5,6],[]] ~?= [1,2,3,4,5,6],
+    concat' [[1,2,3],[],[7,8,9]] ~?= [1,2,3,7,8,9],
+    concat' [[],[],[]] ~?= ([] :: [Int]) ]
 
 -- | The 'startsWith' function takes two strings and returns 'True'
 -- iff the first is a prefix of the second.
@@ -452,8 +465,31 @@ tconcat' = "concat" ~: (assertFailure "testcase for concat" :: Assertion)
 -- NOTE: use foldr for this one, but it is tricky! (Hint: the value returned by foldr can itself be a function.)
 
 startsWith' :: String -> String -> Bool
-startsWith' = todo
-tstartsWith' = "tstartsWith'" ~: (assertFailure "testcase for startsWith'" :: Assertion)
+startsWith' str comp = if getLength str > getLength comp then False else 
+  foldr (\x y -> case x of
+  (a, b) -> if a == b then y else False) True (zip str comp)
+
+-- Returns length of string
+getLength :: String -> Int
+getLength str = foldr (\x y -> y + 1) 0 str
+
+-- Zips two strings together
+-- How? Foldr consumes the first string and returns a function that consumes 
+-- the second string
+myZip :: String -> String -> [(Char, Char)]
+myZip = foldr step done
+  where done ys = []
+        step x zipsfn []     = []
+        step x zipsfn (y:ys) = (x, y) : (zipsfn ys)
+
+tstartsWith' = "tstartsWith'" ~: TestList
+  [ "Hello" `startsWith'` "Hello World!" ~?= True,
+    "Hello" `startsWith'` "Wello Horld!" ~?= False,
+    "Hello" `startsWith'` "Hello" ~?= True,
+    "Hello" `startsWith'` "Hell" ~?= False,
+    "Hello" `startsWith'` "" ~?= False,
+    "" `startsWith'` "" ~?= True,
+    "" `startsWith'` "Hello" ~?= True ]
 
 -- INTERLUDE: para
 
@@ -491,7 +527,7 @@ redefine the function above so that the test cases still pass.
 
 -}
 
-tails' = todo
+tails' = para (\x xs acc -> (x:xs) : acc) [""]
 
 ttails :: Test
 ttails = "tails" ~: TestList [
@@ -512,10 +548,20 @@ ttails = "tails" ~: TestList [
 -- NOTE: use para for this one!
 
 endsWith' :: String -> String -> Bool
-endsWith' = todo
+endsWith' str comp = if str == "" then True else
+  para (\x xs acc -> if x:xs == str then True 
+                                    else acc) False comp 
 
 tendsWith' :: Test
-tendsWith' = "endsWith'" ~: (assertFailure "testcase for endsWith'" :: Assertion)
+tendsWith' = "endsWith'" ~: TestList
+  [ "ld!" `endsWith'` "Hello World!" ~?= True,
+    "World" `endsWith'` "Hello World!" ~?= False,
+    "Hello" `endsWith'` "Hello World!" ~?= False,
+    "Hello" `endsWith'` "Hello" ~?= True,
+    "Hello" `endsWith'` "Hell" ~?= False,
+    "Hello" `endsWith'` "" ~?= False,
+    "" `endsWith'` "" ~?= True,
+    "" `endsWith'` "Hello" ~?= True ]
 
 -- | The 'countSub' function returns the number of (potentially overlapping)
 -- occurrences of a substring sub found in a string.
@@ -528,8 +574,17 @@ tendsWith' = "endsWith'" ~: (assertFailure "testcase for endsWith'" :: Assertion
 -- (You may use the para and startsWith' functions in countSub'.)
 
 countSub'  :: String -> String -> Int
-countSub' = todo
-tcountSub' = "countSub'" ~: (assertFailure "testcase for countSub'" :: Assertion)
+countSub' str comp = if str == "" then getLength comp+1 else
+  para (\x xs acc -> if str `startsWith'` (x:xs) 
+                     then 1 + acc else acc) 0 comp
+tcountSub' = "countSub'" ~: TestList
+  [ countSub' "aa" "aaa" ~?= 2,
+    countSub' "" "aaac" ~?= 5,
+    countSub' "aa" "aaac" ~?= 2,
+    countSub' "aa" "aaaa" ~?= 3,
+    countSub' "aa" "" ~?= 0,
+    countSub' "aa" "a" ~?= 0,
+    countSub' "" "" ~?= 1 ]
 
 --------------------------------------------------------------------------------
 -- Problem (Tree Processing)
@@ -576,9 +631,15 @@ foldTree f e (Branch a n1 n2) = f a (foldTree f e n1) (foldTree f e n2)
 -- Branch 'a' Empty Empty
 
 appendTree :: Tree a -> Tree a -> Tree a
-appendTree = todo
+appendTree a b = case a of 
+  Empty -> b
+  Branch x t1 t2 -> Branch x (appendTree t1 b) (appendTree t2 b)
+
 tappendTree :: Test
-tappendTree = "appendTree" ~: (assertFailure "testcase for appendTree"  :: Assertion)
+tappendTree = "appendTree" ~: TestList
+  [ appendTree (Branch 'a' Empty Empty) (Branch 'b' Empty Empty) ~?= 
+    Branch 'a' (Branch 'b' Empty Empty) (Branch 'b' Empty Empty),
+    appendTree Empty (Branch 'a' Empty Empty) ~?= Branch 'a' Empty Empty ]
 
 -- The `invertTree` function takes a tree of pairs and returns a new tree
 -- with each pair reversed.  For example:
@@ -587,9 +648,13 @@ tappendTree = "appendTree" ~: (assertFailure "testcase for appendTree"  :: Asser
 -- Branch (True,"a") Empty Empty
 
 invertTree :: Tree (a,b) -> Tree (b,a)
-invertTree = todo
+invertTree = mapTree (\(x,y) -> (y,x)) 
 tinvertTree :: Test
-tinvertTree = "invertTree" ~: (assertFailure "testcase for invertTree" :: Assertion)
+tinvertTree = "invertTree" ~: TestList
+  [ invertTree (Branch ("a",True) Empty Empty) ~?= 
+    Branch (True,"a") Empty Empty,
+    invertTree (Branch ("a",True) (Branch ("b",False) Empty Empty) Empty) ~?=
+    Branch (True,"a") (Branch (False,"b") Empty Empty) Empty ]
 
 -- `takeWhileTree`, applied to a predicate `p` and a tree `t`,
 -- returns the largest prefix tree of `t` (possibly empty)
@@ -606,9 +671,12 @@ tree1 = Branch 1 (Branch 2 Empty Empty) (Branch 3 Empty Empty)
 -- Empty
 
 takeWhileTree :: (a -> Bool) -> Tree a -> Tree a
-takeWhileTree = todo
+takeWhileTree p = 
+  foldTree (\x t1 t2 -> if p x then Branch x t1 t2 else Empty) Empty
 ttakeWhileTree :: Test
-ttakeWhileTree = "takeWhileTree" ~: (assertFailure "testcase for takeWhileTree" :: Assertion)
+ttakeWhileTree = "takeWhileTree" ~: TestList
+  [ takeWhileTree (< 3) tree1 ~?= Branch 1 (Branch 2 Empty Empty) Empty,
+    takeWhileTree (< 0) tree1 ~?= Empty ]
 
 -- `allTree pred tree` returns `False` if any element of `tree`
 -- fails to satisfy `pred` and `True` otherwise. For example:
@@ -617,9 +685,14 @@ ttakeWhileTree = "takeWhileTree" ~: (assertFailure "testcase for takeWhileTree" 
 -- False
 
 allTree :: (a -> Bool) -> Tree a -> Bool
-allTree = todo
+allTree pred = foldTree (\x t1 t2 -> pred x && t1 && t2) True
 tallTree :: Test
-tallTree = "allTree" ~: (assertFailure "testcase for allTree" :: Assertion)
+tallTree = "allTree" ~: TestList
+  [ allTree odd tree1 ~?= False,
+    allTree (< 4) tree1 ~?= True,
+    allTree (< 0) tree1 ~?= False,
+    allTree (< 5) tree1 ~?= True,
+    allTree (< 2) tree1 ~?= False]
 
 -- WARNING: This one is a bit tricky!  (Hint: use `foldTree` and remember
 --  that the value returned by `foldTree` can itself be a function. If you are
@@ -636,8 +709,19 @@ tallTree = "allTree" ~: (assertFailure "testcase for allTree" :: Assertion)
 -- Branch 4 Empty Empty
 
 map2Tree :: (a -> b -> c) -> Tree a -> Tree b -> Tree c
-map2Tree = todo
+map2Tree f xs ys = foldTree step done xs ys
+  where done _ = Empty
+        step _ _ _ Empty = Empty
+        step x xLeft xRight (Branch y yLeft yRight) =
+          Branch (f x y) (xLeft yLeft) (xRight yRight)
 
 tmap2Tree :: Test
-tmap2Tree = "map2Tree" ~: (assertFailure "testcase for map2Tree" :: Assertion)
+tmap2Tree = "map2Tree" ~: TestList
+  [map2Tree (+) (Branch 1 Empty (Branch 2 Empty Empty)) (Branch 3 Empty Empty) 
+  ~?= Branch 4 Empty Empty,
+  map2Tree (+) (Branch 1 Empty (Branch 2 Empty Empty)) 
+  (Branch 3 Empty (Branch 4 Empty Empty)) 
+  ~?= Branch 4 Empty (Branch 6 Empty Empty),
+  map2Tree (+) (Branch 1 Empty Empty) (Branch 3 Empty (Branch 4 Empty Empty))
+  ~?= Branch 4 Empty Empty]
 
