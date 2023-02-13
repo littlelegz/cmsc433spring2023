@@ -319,9 +319,14 @@ testHO = TestList [ttakeWhile, tfind, tall, tmap2, tmapMaybe]
 -- []
 
 takeWhile :: (a -> Bool) -> [a] -> [a]
-takeWhile = todo
+takeWhile p xs = foldr (\x y -> if p x then x : y else []) [] xs
+
 ttakeWhile :: Test
-ttakeWhile = "takeWhile" ~: (assertFailure "testcase for takeWhile" :: Assertion)
+ttakeWhile = "takeWhile" ~: TestList
+  [ takeWhile (< 3) [1,2,3,4,1,2,3,4] ~?= [1,2],
+    takeWhile (< 9) [1,2,3] ~?= [1,2,3],
+    takeWhile (< 0) [1,2,3] ~?= ([] :: [Int]),
+    takeWhile (< 0) [] ~?= ([] :: [Int]) ]
 
 -- | `find pred lst` returns the first element of the list that
 -- satisfies the predicate. Because no element may do so, the
@@ -331,9 +336,13 @@ ttakeWhile = "takeWhile" ~: (assertFailure "testcase for takeWhile" :: Assertion
 -- Just 3
 
 find :: (a -> Bool) -> [a] -> Maybe a
-find = todo
+find pred lst = foldr (\x y -> if pred x then Just x else y) Nothing lst
+
 tfind :: Test
-tfind = "find" ~: (assertFailure "testcase for find" :: Assertion)
+tfind = "find" ~: TestList
+  [ find odd [0,2,3,4] ~?= Just 3,
+    find odd [0,2,4] ~?= Nothing,
+    find odd [] ~?= Nothing ]
 
 -- | `all pred lst` returns `False` if any element of `lst`
 -- fails to satisfy `pred` and `True` otherwise.
@@ -342,9 +351,13 @@ tfind = "find" ~: (assertFailure "testcase for find" :: Assertion)
 -- False
 
 all  :: (a -> Bool) -> [a] -> Bool
-all = todo
+all pred lst = foldr (\x y -> if pred x then y else False) True lst
+
 tall :: Test
-tall = "all" ~: (assertFailure "testcase for all" :: Assertion)
+tall = "all" ~: TestList
+  [ all odd [1,2,3] ~?= False,
+    all odd [1,3,5] ~?= True,
+    all odd [] ~?= True ]
 
 -- | `map2 f xs ys` returns the list obtained by applying `f` to
 -- to each pair of corresponding elements of `xs` and `ys`. If
@@ -360,10 +373,18 @@ tall = "all" ~: (assertFailure "testcase for all" :: Assertion)
 -- NOTE: `map2` is called `zipWith` in the Prelude
 
 map2 :: (a -> b -> c) -> [a] -> [b] -> [c]
-map2 = todo
+map2 f xs ys = case (xs, ys) of
+  ([], _) -> []
+  (_, []) -> []
+  (x:xs, y:ys) -> f x y : map2 f xs ys
 
 tmap2 :: Test
-tmap2 = "map2" ~: (assertFailure "testcase for map2" :: Assertion)
+tmap2 = "map2" ~: TestList 
+  [ map2 (+) [1,2] [3,4] ~?= [4,6],
+    map2 (+) [1,2] [3,4,5] ~?= [4,6],
+    map2 (+) [1,2,3] [3,4] ~?= [4,6],
+    map2 (+) [] [3,4] ~?= ([] :: [Int]),
+    map2 (+) [1,2] [] ~?= ([] :: [Int]) ]
 
 -- | Apply a partial function to all the elements of the list,
 -- keeping only valid outputs.
