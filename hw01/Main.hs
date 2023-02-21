@@ -1,3 +1,9 @@
+{-
+Name: Jerry Zhao
+UID: 117068115
+Date: 2/15/2023
+Project 1
+-}
 module Main where
 import Prelude hiding (reverse, concat, zip, (++), takeWhile, all)
 import Test.HUnit
@@ -467,7 +473,7 @@ tconcat' = "concat" ~: TestList
 startsWith' :: String -> String -> Bool
 startsWith' str comp = if getLength str > getLength comp then False else 
   foldr (\x y -> case x of
-  (a, b) -> if a == b then y else False) True (zip str comp)
+  (a, b) -> if a == b then y else False) True (myZip str comp)
 
 -- Returns length of string
 getLength :: String -> Int
@@ -710,7 +716,7 @@ tallTree = "allTree" ~: TestList
 
 map2Tree :: (a -> b -> c) -> Tree a -> Tree b -> Tree c
 map2Tree f xs ys = foldTree step done xs ys
-  where done _ = Empty
+  where done _ = Empty -- hits done (acc) at end of xs tree, therefore returns E
         step _ _ _ Empty = Empty
         step x xLeft xRight (Branch y yLeft yRight) =
           Branch (f x y) (xLeft yLeft) (xRight yRight)
